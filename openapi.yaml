@@ -1,0 +1,366 @@
+openapi: 3.0.0
+info:
+  title: API Klasifikasi Cabai
+  version: 1.0.0
+  description: >
+    API untuk menerima gambar dari ESP32-CAM dan menyimpan hasil klasifikasi penyakit 
+    pada bibit tanaman cabai ke database MySQL.
+  contact:
+    name: Kelompok2 S5
+  license:
+    name: MIT
+
+servers:
+  - url: http://127.0.0.1:8000
+    description: Local development server
+  - url: http://192.168.1.100:8000
+    description: Network server
+
+paths:
+  /:
+    get:
+      summary: Cek status API
+      tags: [Health]
+      description: Endpoint untuk mengecek apakah API berjalan dengan baik
+      responses:
+        '200':
+          description: API aktif
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                    example:  API Klasifikasi Cabai Aktif!
+                  timestamp:
+                    type: string
+                    format: date-time
+                    example: "2025-11-01T14:04:59.123456"
+
+  /upload:
+    post:
+      summary: Upload gambar hasil klasifikasi cabai
+      tags: [Upload]
+      description: Endpoint untuk menerima gambar dari ESP32-CAM dan menyimpan hasil klasifikasi ke database.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+                - hasil
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: File gambar hasil deteksi (jpg, jpeg, png, bmp)
+                hasil:
+                  type: integer
+                  enum: [0, 1]
+                  description: 1 untuk sehat, 0 untuk sakit
+                  example: 1
+      responses:
+        '201':
+          description: Data berhasil disimpan
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                    example: ✅ Data berhasil disimpan
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 1
+                      path:
+                        type: string
+                        example: uploads/gambar1.jpg
+                      hasil:
+                        type: string
+                        example: Sehat
+                      created_at:
+                        type: string
+                        format: date-time
+                        example: "2025-11-01 14:04:59"
+                      updated_at:
+                        type: string
+                        format: date-time
+                        example: "2025-11-01 14:04:59"
+        '400':
+          description: Parameter tidak valid atau file type tidak didukung
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: "Nilai hasil harus 0 (Sakit) atau 1 (Sehat)"
+        '413':
+          description: File terlalu besar
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: "File size exceeds maximum limit"
+        '500':
+          description: Error server
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+
+  /klasifikasi:
+    get:
+      summary: Ambil semua data klasifikasi
+      tags: [Data]
+      description: Mengambil semua data hasil klasifikasi cabai yang tersimpan di database dengan pagination.
+      parameters:
+        - name: skip
+          in: query
+          schema:
+            type: integer
+            default: 0
+          description: Jumlah data yang dilewatkan (offset)
+          example: 0
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 100
+            maximum: 1000
+          description: Jumlah data yang diambil per page
+          example: 100
+      responses:
+        '200':
+          description: Daftar data klasifikasi cabai
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  total_data:
+                    type: integer
+                    example: 5
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                          example: 1
+                        path:
+                          type: string
+                          example: uploads/cabai1.jpg
+                        hasil:
+                          type: string
+                          enum: ["Sehat", "Sakit"]
+                          example: Sehat
+                        created_at:
+                          type: string
+                          format: date-time
+                          example: "2025-11-01 12:00:00"
+                        updated_at:
+                          type: string
+                          format: date-time
+                          example: "2025-11-01 12:00:00"
+
+  /klasifikasi/status/{hasil}:
+    get:
+      summary: Ambil data berdasarkan status
+      tags: [Data]
+      description: Mengambil data klasifikasi berdasarkan status (Sehat atau Sakit).
+      parameters:
+        - name: hasil
+          in: path
+          required: true
+          schema:
+            type: integer
+            enum: [0, 1]
+          description: 0 untuk Sakit, 1 untuk Sehat
+          example: 1
+      responses:
+        '200':
+          description: Data berdasarkan status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  filter:
+                    type: string
+                    example: Status Sehat
+                  total_data:
+                    type: integer
+                    example: 3
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                          example: 1
+                        path:
+                          type: string
+                          example: uploads/cabai1.jpg
+                        hasil:
+                          type: string
+                          enum: ["Sehat", "Sakit"]
+                          example: Sehat
+                        created_at:
+                          type: string
+                          format: date-time
+                          example: "2025-11-01 12:00:00"
+                        updated_at:
+                          type: string
+                          format: date-time
+                          example: "2025-11-01 12:00:00"
+        '400':
+          description: Parameter status tidak valid
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: "Hasil harus 0 atau 1"
+
+  /klasifikasi/{id}:
+    get:
+      summary: Ambil data klasifikasi berdasarkan ID
+      tags: [Data]
+      description: Mengambil data klasifikasi spesifik berdasarkan ID.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: ID data klasifikasi
+          example: 1
+      responses:
+        '200':
+          description: Data ditemukan
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 1
+                      path:
+                        type: string
+                        example: uploads/cabai1.jpg
+                      hasil:
+                        type: string
+                        enum: ["Sehat", "Sakit"]
+                        example: Sehat
+                      created_at:
+                        type: string
+                        format: date-time
+                        example: "2025-11-01 12:00:00"
+                      updated_at:
+                        type: string
+                        format: date-time
+                        example: "2025-11-01 12:00:00"
+        '404':
+          description: Data tidak ditemukan
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: "Data tidak ditemukan"
+
+  /statistik:
+    get:
+      summary: Ambil statistik data klasifikasi
+      tags: [Analytics]
+      description: Mengambil ringkasan statistik dari semua data klasifikasi.
+      responses:
+        '200':
+          description: Statistik data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    type: object
+                    properties:
+                      total_data:
+                        type: integer
+                        example: 10
+                      status_sehat:
+                        type: integer
+                        example: 6
+                      status_sakit:
+                        type: integer
+                        example: 4
+                      persentase_sehat:
+                        type: number
+                        format: float
+                        example: 60.0
+                      persentase_sakit:
+                        type: number
+                        format: float
+                        example: 40.0
+
+components:
+  schemas:
+    KlasifikasiResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+        path:
+          type: string
+        hasil:
+          type: string
+          enum: ["Sehat", "Sakit"]
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
