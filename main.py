@@ -5,13 +5,17 @@ from sqlalchemy import create_engine, Column, Integer, String, TIMESTAMP, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 from datetime import datetime
+from dotenv import load_dotenv
 import shutil
 import os
+
+# Load environment variables dari .env
+load_dotenv()
 
 # ======================
 # KONFIGURASI DATABASE
 # ======================
-DATABASE_URL = "mysql+pymysql://root:@localhost/klasifikasi_cabai"
+DATABASE_URL = os.getenv("DATABASE_URL", "mysql+pymysql://root:@localhost/db_cabai")
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(bind=engine)
 Base = declarative_base()
@@ -71,7 +75,7 @@ def root():
     """Cek status API"""
     return {
         "status": "success",
-        "message": " API Klasifikasi Cabai Aktif!",
+        "message": "API Klasifikasi Cabai Aktif!",
         "timestamp": datetime.now().isoformat()
     }
 
