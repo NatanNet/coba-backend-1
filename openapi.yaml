@@ -78,7 +78,7 @@ paths:
                     example: success
                   message:
                     type: string
-                    example: ✅ Data berhasil disimpan
+                    example:  Data berhasil disimpan
                   data:
                     type: object
                     properties:
